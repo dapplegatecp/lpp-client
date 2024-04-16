@@ -190,6 +190,7 @@ def get_cmd_params():
     serial = get_appdata("lpp-client.serial") or "/dev/ttyS1"
     baud = get_appdata("lpp-client.baud") or 115200
     output = get_appdata("lpp-client.output") or "un"
+    format = get_appdata("lpp-client.format") or "osr"
 
     cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
 
@@ -214,7 +215,11 @@ if __name__ == "__main__":
         ip, port = params['output'].split(':')
         output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
 
-    cmd = f"/app/example-lpp osr --prm -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
+    format = "osr"
+    if params["format"] == "ssr":
+        format = "ssr --format spartn --ura-override 2 --ublox-clock-correction --force-continuity --sf055-override 3 --increasing-siou"
+
+    cmd = f"/app/example-lpp {format} --prm --confidence-95to39 -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
     logger.info(cmd)
     program = RunProgram(cmd)
 
