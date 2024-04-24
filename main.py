@@ -191,10 +191,11 @@ def get_cmd_params():
     baud = get_appdata("lpp-client.baud") or 115200
     output = get_appdata("lpp-client.output") or "un"
     format = get_appdata("lpp-client.format") or "osr"
+    starting_cell_id = get_appdata("lpp-client.starting_cell_id") or None
 
     cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
 
-    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format}
+    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format, "starting_cell_id": starting_cell_id}
 
 if __name__ == "__main__":
     logger.info("Starting lpp client")
@@ -219,7 +220,7 @@ if __name__ == "__main__":
     if params["format"] == "ssr":
         format = "ssr --format spartn --ura-override 2 --ublox-clock-correction --force-continuity --sf055-override 3 --increasing-siou"
 
-    cmd = f"/app/example-lpp {format} --prm --confidence-95to39 -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
+    cmd = f"/app/example-lpp {format} --prm --confidence-95to39 -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {params['starting_cell_id'] or cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
     logger.info(cmd)
     program = RunProgram(cmd)
 
