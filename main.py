@@ -244,7 +244,7 @@ if __name__ == "__main__":
                 cmd = f"/CID,L,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
                 program.write(cmd)
 
-    ct = threading.Thread(target=control_thread, args=(program,params))
+    ct = threading.Thread(target=control_thread, args=(program,params,cellular))
     ct.start()
 
     program.start()
