@@ -194,7 +194,7 @@ def get_cmd_params():
 
     cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
 
-    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path}
+    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format}
 
 if __name__ == "__main__":
     logger.info("Starting lpp client")
