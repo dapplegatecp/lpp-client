@@ -192,10 +192,14 @@ def get_cmd_params():
     output = get_appdata("lpp-client.output") or "un"
     format = get_appdata("lpp-client.format") or "osr"
     starting_cell_id = get_appdata("lpp-client.starting_cell_id") or None
+    forwarding = get_appdata("lpp-client.forwarding") or ""
+    flags = get_appdata("lpp-client.flags") or ""
+    #flags are comma separated. For example:
+    # "confidence-95to39,ura-override=2,ublox-clock-correction,force-continuity,sf055-default=3,sf042-default=1,increasing-siou"
 
     cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
 
-    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format, "starting_cell_id": starting_cell_id}
+    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format, "starting_cell_id": starting_cell_id, "forwarding": forwarding, "flags": flags}
 
 if __name__ == "__main__":
     logger.info("Starting lpp client")
@@ -217,10 +221,22 @@ if __name__ == "__main__":
         output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
 
     format = "osr"
-    if params["format"] == "ssr":
-        format = "ssr --format spartn --ura-override 2 --ublox-clock-correction --force-continuity --sf055-override 3 --increasing-siou"
+    additional_flags = []
+    if params["format"] == "osr":
+        format = "osr"
+        if params["forwarding"]:
+            additional_flags =["format=lrf-uper"]
+    else:
+        format = "ssr"
+        if params["forwarding"]:
+            additional_flags =["format=lrf-uper"]
+        else:
+            additional_flags =["format=spartn"]
 
-    cmd = f"/app/example-lpp {format} --prm --confidence-95to39 -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {params['starting_cell_id'] or cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
+    additional_flags += [f.strip() for f in params["flags"].split(",")]
+    additional_flags = "--".join(additional_flags)
+
+    cmd = f"/app/example-lpp {format} --prm {additional_flags} -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {params['starting_cell_id'] or cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
     logger.info(cmd)
     program = RunProgram(cmd)
 
