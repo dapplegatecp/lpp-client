@@ -1,4 +1,4 @@
-FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:v3.4.9 as builder
+FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:v3.4.11 as builder
 
 FROM python:3-slim-bullseye
 
