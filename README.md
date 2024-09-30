@@ -9,6 +9,20 @@ The LPP client connects to a specified host and port, retrieves cellular informa
 
 ## Configuration
 
+Use the following yaml in the Cradlepoint container configuration
+
+```yaml
+version: '2.4'
+services:
+  lpp:
+    network_mode: bridge
+    image: ghcr.io/dapplegatecp/lpp-client
+    volumes:
+      - $CONFIG_STORE
+    devices:
+      - /dev/ttyS1
+```
+
 The application uses the following configuration parameters, which can be set using the Cradlepoint SDK's appdata:
 
 - `lpp-client.host`: The host to connect to (default: 129.192.82.125)
