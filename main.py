@@ -50,6 +50,7 @@ class RunProgram:
                     logger.info(line.strip())
 
             output_thread = threading.Thread(target=output_thread)
+            output_thread.daemon = True
             output_thread.start()
 
             # Wait for the program to complete and collect the return code
@@ -214,6 +215,7 @@ if __name__ == "__main__":
 
     if params["output"] == "un":
         un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"],))
+        un_thread.daemon = True
         un_thread.start()
         output_param = "--nmea-export-un=/tmp/nmea.sock"
     else:
@@ -262,6 +264,7 @@ if __name__ == "__main__":
                 program.write(cmd)
 
     ct = threading.Thread(target=control_thread, args=(program,params,cellular))
+    ct.daemon = True
     ct.start()
 
     program.start()
