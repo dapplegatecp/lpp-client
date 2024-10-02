@@ -1,6 +1,4 @@
 import socket
-import re
-import json
 import time
 import threading
 import subprocess
@@ -64,24 +62,6 @@ class RunProgram:
         finally:
             self.process = None
 
-def un_thread_client():
-    """ Thread for reading from unix socket and logging the output"""
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as unix_socket:
-        while True:
-            try:
-                unix_socket.connect("/tmp/nmea.sock")
-                break
-            except FileNotFoundError:
-                logger.error("NMEA socket not found... trying again")
-                time.sleep(3)
-        buffer = ""
-        while True:
-            chunk = unix_socket.recv(8192).decode()
-            buffer += chunk
-            while '\n' in buffer:
-                line, buffer = buffer.split('\n', 1)
-                logger.info(line)
-
 def handle_nmea(nmea, data=None, cs_path="/status/rtk/nmea"):
     if data is None:
         data = {}
@@ -119,37 +99,6 @@ def un_thread_server(cs_path="/status/rtk/nmea"):
 
 def cs_get(path):
     return cs.get(path)
-
-def cs_get_old(path):
-    END_OF_HEADER = b"\r\n\r\n"
-    CONTENT_LENGTH_HEADER_RE = re.compile(b"content-length: \w*")
-    MAX_PACKET_SIZE = 8192
-    RECV_TIMEOUT = 2.0
-
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as unix_socket:
-        unix_socket.connect("/var/tmp/cs.sock")
-        unix_socket.sendall(f"get\n{path}\n\n0\n".encode())
-        unix_socket.settimeout(RECV_TIMEOUT)
-        response = b""
-        eoh = -1
-        while eoh < 0:
-            buf = unix_socket.recv(MAX_PACKET_SIZE)
-            if len(buf) == 0:
-                break
-            response += buf
-            eoh = response.find(END_OF_HEADER)
-        
-        content_len = CONTENT_LENGTH_HEADER_RE.search(response).group(0)[16:]
-        remaining = int(content_len) - (len(response) - eoh - len(END_OF_HEADER))
-
-        while remaining > 0:
-            buf = unix_socket.recv(MAX_PACKET_SIZE)
-            if len(buf) == 0:
-                break
-            response += buf
-            remaining -= len(buf)
-        return response[eoh:].decode().strip()
-
 
 def get_appdata(key):
     appdata = cs_get("/config/system/sdk/appdata")
