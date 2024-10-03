@@ -141,7 +141,16 @@ def get_cmd_params():
     baud = get_appdata("lpp-client.baud") or 115200
     output = get_appdata("lpp-client.output") or "un"
     format = get_appdata("lpp-client.format") or "osr"
+
+    # mcc, mnc, tac, and cell_id can be statically configured as parsed by get_cellular_info(), 
+    # or it could be dynamically updated from the momdem (default).  Additionality the initial params
+    # can be specified explicitly, which THEN get updated dynamically by the modem. This allows the 
+    # lpp client to start with known initial values
+    starting_mcc = get_appdata("lpp-client.starting_mcc") or None
+    starting_mnc = get_appdata("lpp-client.starting_mnc") or None
+    starting_tac = get_appdata("lpp-client.starting_tac") or None
     starting_cell_id = get_appdata("lpp-client.starting_cell_id") or None
+
     forwarding = get_appdata("lpp-client.forwarding") or ""
     flags = get_appdata("lpp-client.flags") or ""
     #flags are comma separated. For example:
@@ -149,7 +158,21 @@ def get_cmd_params():
 
     cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
 
-    return {"host": host, "port": port, "serial": serial, "baud": baud, "output":output, "cs_path": cs_path, "format": format, "starting_cell_id": starting_cell_id, "forwarding": forwarding, "flags": flags}
+    return {
+        "host": host,
+        "port": port,
+        "serial": serial,
+        "baud": baud,
+        "output": output,
+        "cs_path": cs_path,
+        "format": format,
+        "starting_mcc": starting_mcc,
+        "starting_mnc": starting_mnc,
+        "starting_tac": starting_tac,
+        "starting_cell_id": starting_cell_id,
+        "forwarding": forwarding,
+        "flags": flags
+    }
 
 if __name__ == "__main__":
     logger.info("Starting lpp client")
@@ -187,7 +210,20 @@ if __name__ == "__main__":
     additional_flags += [f.strip() for f in params["flags"].split(",")]
     additional_flags = "--".join(additional_flags)
 
-    cmd = f"/app/example-lpp {format} --prm {additional_flags} -h {params['host']} --port {params['port']} -c {cellular['mcc']} -n {cellular['mnc']} -t {cellular['tac']} -i {params['starting_cell_id'] or cellular['cell_id']} --imsi {cellular['imsi']} --nmea-serial {params['serial']} --nmea-serial-baud {params['baud']} --ctrl-stdin {output_param}"
+    cmd = (
+        f"/app/example-lpp {format} "
+        f"--prm {additional_flags} "
+        f"-h {params['host']} "
+        f"--port {params['port']} "
+        f"-c {params['starting_mmc'] or cellular['mcc']} "
+        f"-n {params['starting_mnc'] or cellular['mnc']} "
+        f"-t {params['starting_tac'] or cellular['tac']} "
+        f"-i {params['starting_cell_id'] or cellular['cell_id']} "
+        f"--imsi {cellular['imsi']} "
+        f"--nmea-serial {params['serial']} "
+        f"--nmea-serial-baud {params['baud']} "
+        f"--ctrl-stdin {output_param}"
+    )
     logger.info(cmd)
     program = RunProgram(cmd)
 

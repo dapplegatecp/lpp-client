@@ -31,10 +31,19 @@ The application uses the following configuration parameters, which can be set us
 - `lpp-client.baud`: The baud rate for the serial connection (default: 115200)
 - `lpp-client.output`: The output destination (default: "un" for Unix socket)
 - `lpp-client.format`: The data format (default: "osr")
-- `lpp-client.starting_cell_id`: The starting cell ID (optional)
 - `lpp-client.forwarding`: Forwarding configuration (optional)
 - `lpp-client.flags`: Additional flags for the LPP client (optional)
 - `lpp-client.path`: The CS (Configuration System) path for storing NMEA data (default: "/status/rtk/nmea")
+- `lpp-client.starting_mmc`: The starting mmc (optional)
+- `lpp-client.starting_mnc`: The starting mnc (optional)
+- `lpp-client.starting_tac`: The starting tac (optional)
+- `lpp-client.starting_cell_id`: The starting cell ID (optional)
+- `lpp-client.mcc`: Mobile Country Code (optional)
+- `lpp-client.mnc`: Mobile Network Code (optional)
+- `lpp-client.tac`: Tracking Area Code (optional)
+- `lpp-client.cell_id`: Cell ID (optional)
+- `lpp-client.imsi`: International Mobile Subscriber Identity (optional)
+
 
 ## Cellular Information
 
@@ -47,6 +56,8 @@ The application retrieves cellular information from the router, including:
 - IMSI (International Mobile Subscriber Identity)
 
 These values can be overridden using the corresponding appdata settings (e.g., `lpp-client.mcc`, `lpp-client.mnc`, etc.).
+
+The _initial_ starting values can also be overridden, these are the values sent to the lpp software's command line, but will be updated with real values via a control mechanism with values from the modem. These are the starting_mcc, starting_mnc, etc. settings.
 
 ## Output Options
 
