@@ -215,7 +215,7 @@ if __name__ == "__main__":
         f"--prm {additional_flags} "
         f"-h {params['host']} "
         f"--port {params['port']} "
-        f"-c {params['starting_mmc'] or cellular['mcc']} "
+        f"-c {params['starting_mcc'] or cellular['mcc']} "
         f"-n {params['starting_mnc'] or cellular['mnc']} "
         f"-t {params['starting_tac'] or cellular['tac']} "
         f"-i {params['starting_cell_id'] or cellular['cell_id']} "
