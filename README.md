@@ -17,11 +17,14 @@ services:
   lpp:
     network_mode: bridge
     image: ghcr.io/dapplegatecp/lpp-client
+    restart: unless-stopped
     volumes:
       - $CONFIG_STORE
     devices:
       - /dev/ttyS1
+
 ```
+> Note: the application running in the container relies on the container auto-restarting, so be sure to set restart to "unless-stopped" as shown above.
 
 The application uses the following configuration parameters, which can be set using the Cradlepoint SDK's appdata:
 
