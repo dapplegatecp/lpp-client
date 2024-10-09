@@ -42,7 +42,11 @@ class RunProgram:
                 while True:
                     if not self.process:
                         break
-                    line = self.process.stdout.readline()
+                    try:
+                        line = self.process.stdout.readline()
+                    except UnicodeDecodeError as e:
+                        logger.error(f"Error reading output: {e}")
+                        continue
                     if not line:
                         break
                     logger.info(line.strip())
@@ -87,7 +91,12 @@ def un_thread_server(cs_path="/status/rtk/nmea"):
             with client_socket:
                 buffer = ""
                 while True:
-                    chunk = client_socket.recv(8192).decode()
+                    chunk = client_socket.recv(8192)
+                    try:
+                        chunk = chunk.decode()
+                    except UnicodeDecodeError:
+                        logger.error(f"Error decoding chunk as utf-8 {chunk}")
+                        chunk = None
                     if not chunk:
                         break
                     buffer += chunk
