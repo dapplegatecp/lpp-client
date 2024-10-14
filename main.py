@@ -127,6 +127,7 @@ def get_cellular_info(device=None):
     tac = diag.get('TAC')
     imsi = diag['IMSI']
     cell_id = diag.get('CELL_ID').split(" ")[0]
+    mdn = diag.get('MDN')
 
     if not cell_id:
         cell_id =  diag['NR_CELL_ID']
@@ -140,6 +141,11 @@ def get_cellular_info(device=None):
     current_cellular["tac"] = get_appdata("lpp-client.tac") or current_cellular["tac"]
     current_cellular["cell_id"] = get_appdata("lpp-client.cell_id") or current_cellular["cell_id"]
     current_cellular["imsi"] = get_appdata("lpp-client.imsi") or current_cellular["imsi"]
+
+    # mdn can only be used if explicitly requested
+    for use_mdn in (get_appdata("lpp-client.mdn"), get_appdata("lpp-client.msisdn")):
+        if use_mdn is not None:
+            current_cellular["mdn"] = mdn if use_mdn.lower() in ["", "true", "yes", "y"] else use_mdn
 
     return current_cellular
 
@@ -216,8 +222,8 @@ if __name__ == "__main__":
         else:
             additional_flags =["format=spartn"]
 
-    additional_flags += [f.strip() for f in params["flags"].split(",")]
-    additional_flags = "--".join(additional_flags)
+    additional_flags = params["flags"].replace(',', ' ').split()
+    additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
 
     cmd = (
         f"/app/example-lpp {format} "
@@ -228,7 +234,7 @@ if __name__ == "__main__":
         f"-n {params['starting_mnc'] or cellular['mnc']} "
         f"-t {params['starting_tac'] or cellular['tac']} "
         f"-i {params['starting_cell_id'] or cellular['cell_id']} "
-        f"--imsi {cellular['imsi']} "
+        f"--msisdn {cellular['mdn']}" if cellular.get('mdn') else f"--imsi {cellular['imsi']} "
         f"--nmea-serial {params['serial']} "
         f"--nmea-serial-baud {params['baud']} "
         f"--ctrl-stdin {output_param}"
