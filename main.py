@@ -225,6 +225,8 @@ if __name__ == "__main__":
     additional_flags = params["flags"].replace(',', ' ').split()
     additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
 
+    msisdn_or_imsi = f"--msisdn {cellular['mdn']}" if cellular.get('mdn') else f"--imsi {cellular['imsi']}"
+
     cmd = (
         f"/app/example-lpp {format} "
         f"--prm {additional_flags} "
@@ -234,7 +236,7 @@ if __name__ == "__main__":
         f"-n {params['starting_mnc'] or cellular['mnc']} "
         f"-t {params['starting_tac'] or cellular['tac']} "
         f"-i {params['starting_cell_id'] or cellular['cell_id']} "
-        f"--msisdn {cellular['mdn']}" if cellular.get('mdn') else f"--imsi {cellular['imsi']} "
+        f"{msisdn_or_imsi} "
         f"--nmea-serial {params['serial']} "
         f"--nmea-serial-baud {params['baud']} "
         f"--ctrl-stdin {output_param}"
