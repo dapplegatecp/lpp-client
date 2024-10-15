@@ -205,6 +205,8 @@ if __name__ == "__main__":
         un_thread.daemon = True
         un_thread.start()
         output_param = "--nmea-export-un=/tmp/nmea.sock"
+    elif params["output"] == "un-ncs":
+        output_param = "--nmea-export-un=/tmp/nmea.sock"
     else:
         ip, port = params['output'].split(':')
         output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
