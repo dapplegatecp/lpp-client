@@ -12,6 +12,8 @@ logger = logging.getLogger("lpp-client")
 from csclient import CSClient
 cs = CSClient("lpp-client", logger=logger)
 
+MAX_TCP_CONNECTIONS = 5
+
 class RunProgram:
     def __init__(self, cmd):
         self.cmd = cmd
@@ -77,7 +79,14 @@ def handle_nmea(nmea, data=None, cs_path="/status/rtk/nmea"):
     cs.put(cs_path, cs_data)
     return data
 
-def un_thread_server(cs_path="/status/rtk/nmea"):
+def handle_nmea_tcp(nmea, tcp_clients):
+    for client in tcp_clients:
+        try:
+            client.sendall((nmea+ '\r\n').encode())
+        except:
+            tcp_clients.remove(client)
+
+def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
     """ Thread for reading from unix socket and logging the output"""
     socket_path = "/tmp/nmea.sock"
     data = {}
@@ -105,6 +114,17 @@ def un_thread_server(cs_path="/status/rtk/nmea"):
                         if line:
                             logger.info(line)
                             data = handle_nmea(line, data=data, cs_path=cs_path)
+                            handle_nmea_tcp(line, tcp_clients)
+
+def tcp_server_thread(port, tcp_clients):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_socket:
+        tcp_socket.bind(('0.0.0.0', port))
+        tcp_socket.listen(MAX_TCP_CONNECTIONS)
+        logger.info(f"TCP server listening on port {port}")
+        while True:
+            client_socket, addr = tcp_socket.accept()
+            logger.info(f"TCP client connected from {addr}")
+            tcp_clients.append(client_socket)
 
 def cs_get(path):
     return cs.get(path)
@@ -199,17 +219,19 @@ if __name__ == "__main__":
     if params["cs_path"] == "/status/rtk/nmea": # the default
         if cs.get("/status/rtk") is None:
             cs.put("/status/rtk", {"nmea": []})
+    
+    tcp_clients=[]
 
-    if params["output"] == "un":
-        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"],))
+    if params["output"].startswith == "un":
+        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients))
         un_thread.daemon = True
         un_thread.start()
         output_param = "--nmea-export-un=/tmp/nmea.sock"
-    elif params["output"] == "un-ncs":
-        socket_path = "/tmp/nmea.sock"
-        if os.path.exists(socket_path):
-            os.unlink(socket_path)
-        output_param = "--nmea-export-un=/tmp/nmea.sock"
+    if params["output"].startswith("un-tcp"):
+        _, port = params["output"].split(":")
+        tcp_thread = threading.Thread(target=tcp_server_thread, args=(port, tcp_clients))
+        tcp_thread.daemon = True
+        tcp_thread.start()
     else:
         ip, port = params['output'].split(':')
         output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
