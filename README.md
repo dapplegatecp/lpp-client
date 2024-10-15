@@ -26,6 +26,8 @@ services:
 ```
 > Note: the application running in the container relies on the container auto-restarting, so be sure to set restart to "unless-stopped" as shown above.
 
+> Also note: when using the tcp server feature (lpp-client.output=un-tcp:port), you need to expose the port on the container so external clients can connect, e.g. by adding `ports: ['5433:5433']` to the service definition.
+
 The application uses the following configuration parameters, which can be set using the Cradlepoint SDK's appdata:
 
 - `lpp-client.host`: The host to connect to (default: 129.192.82.125)
@@ -64,7 +66,8 @@ The _initial_ starting values can also be overridden, these are the values sent 
 
 ## Output Options
 
-- Unix Socket: When `output` is set to "un", the application creates a Unix socket at `/tmp/nmea.sock` for NMEA data output.
+- Unix Socket: When `output` is set to "un", the application creates a Unix socket at `/tmp/nmea.sock` however, this is only consumed by the local container but populates the CS path (default: "/status/rtk/nmea").
+- Unix Socket and TCP Server: When `output` is set to "un-tcp:port", the application creates a Unix socket at `/tmp/nmea.sock` and populates the CS path and also listens on the specified TCP port for incoming connections (up to 5). This allows for both local and network-based access to NMEA data.
 - TCP: When `output` is set to "ip:port", the application sends NMEA data to the specified IP address and port.
 
 ## Data Formats
