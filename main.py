@@ -112,6 +112,9 @@ def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
                     while '\r\n' in buffer:
                         line, buffer = buffer.split('\r\n', 1)
                         if line:
+                            # check to see if the line starts with $ if not, add it
+                            if line[0] !='$':
+                                line = f'${line}'
                             logger.info(line)
                             data = handle_nmea(line, data=data, cs_path=cs_path)
                             handle_nmea_tcp(line, tcp_clients)
