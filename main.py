@@ -229,7 +229,7 @@ if __name__ == "__main__":
         output_param = "--nmea-export-un=/tmp/nmea.sock"
         if params["output"].startswith("un-tcp"):
             _, port = params["output"].split(":")
-            tcp_thread = threading.Thread(target=tcp_server_thread, args=(port, tcp_clients))
+            tcp_thread = threading.Thread(target=tcp_server_thread, args=(int(port), tcp_clients))
             tcp_thread.daemon = True
             tcp_thread.start()
     else:
