@@ -49,6 +49,7 @@ The application uses the following configuration parameters, which can be set us
 - `lpp-client.cell_id`: Cell ID (optional)
 - `lpp-client.imsi`: International Mobile Subscriber Identity (optional)
 
+Alternatively, you can specify these configuration parameters using environment variables with the LPP_CLIENT_ prefix, e.g. LPP_CLIENT_HOST.
 
 ## Cellular Information
 

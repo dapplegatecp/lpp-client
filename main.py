@@ -76,7 +76,7 @@ def handle_nmea(nmea, data=None, cs_path="/status/rtk/nmea"):
     data = {k: v for k, v in data.items() if (t - k) < 30}
     data[t] = nmea
     cs_data = list(data.values())
-    cs.put(cs_path, cs_data)
+    cs_put(cs_path, cs_data)
     return data
 
 def handle_nmea_tcp(nmea, tcp_clients):
@@ -116,7 +116,8 @@ def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
                             if line[0] !='$':
                                 line = f'${line}'
                             logger.info(line)
-                            data = handle_nmea(line, data=data, cs_path=cs_path)
+                            if cs_path:
+                                data = handle_nmea(line, data=data, cs_path=cs_path)
                             handle_nmea_tcp(line, tcp_clients)
 
 def tcp_server_thread(port, tcp_clients):
@@ -130,12 +131,25 @@ def tcp_server_thread(port, tcp_clients):
             tcp_clients.append(client_socket)
 
 def cs_get(path):
-    return cs.get(path)
+    try:
+        return cs.get(path)
+    except Exception as e:
+        logger.error(f"Error getting {path} from CS: {e}")
+
+def cs_put(path, value):
+    try:
+        return cs.put(path, value)
+    except Exception as e:
+        logger.error(f"Error putting to {path} in CS: {e}")
 
 def get_appdata(key):
+    env_key = key.upper().replace('.', '_').replace('-', '_')
+    env_value = os.environ.get(env_key)
+    if env_value:
+        return env_value
+
     appdata = cs_get("/config/system/sdk/appdata")
     return next((j['value'] for j in appdata if j['name'] == key), None)
-
 
 def get_cellular_info(device=None):
     if device is None:
@@ -193,8 +207,8 @@ def get_cmd_params():
     flags = get_appdata("lpp-client.flags") or ""
     #flags are comma separated. For example:
     # "confidence-95to39,ura-override=2,ublox-clock-correction,force-continuity,sf055-default=3,sf042-default=1,increasing-siou"
-
-    cs_path = get_appdata("lpp-client.path") or "/status/rtk/nmea"
+    cs_path = get_appdata("lpp-client.path")
+    cs_path = "/status/rtk/nmea" if  cs_path is None else cs_path 
 
     return {
         "host": host,
@@ -220,8 +234,8 @@ if __name__ == "__main__":
     logger.info(params)
 
     if params["cs_path"] == "/status/rtk/nmea": # the default
-        if cs.get("/status/rtk") is None:
-            cs.put("/status/rtk", {"nmea": []})
+        if cs_get("/status/rtk") is None:
+            cs_put("/status/rtk", {"nmea": []})
     
     tcp_clients=[]
 

@@ -13,17 +13,9 @@ criminal penalties.
 import json
 import os
 import re
-import select
 import socket
-import threading
 import logging.handlers
-import signal
 import sys
-
-try:
-    import traceback
-except ImportError:
-    traceback = None
 
 
 class SdkCSException(Exception):
@@ -436,6 +428,7 @@ class CSClient(object):
         except Exception as err:
             # ignore the command error, continue on to next command
             errmsg = "dispatch failed with exception={} err={}".format(type(err), str(err))
+            print(errmsg)
         if errmsg is not None:
             self.log(errmsg)
             pass
