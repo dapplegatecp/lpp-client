@@ -39,6 +39,7 @@ class CSClient(object):
     CONTENT_LENGTH_HEADER_RE = re.compile(rb"content-length: \w*")
     MAX_PACKET_SIZE = 8192
     RECV_TIMEOUT = 2.0
+    ON_DEVICE = ('linux' in sys.platform) and os.path.exists('/var/tmp/cs.sock')
 
     _instances = {}
 
@@ -57,7 +58,7 @@ class CSClient(object):
         self.ncos = '/var/mnt/sdk' in os.getcwd()  # Running in NCOS
         if not logger:
             handlers = [logging.StreamHandler()]
-            if 'linux' in sys.platform:
+            if self.ON_DEVICE:
                 handlers.append(logging.handlers.SysLogHandler(address='/dev/log'))
             logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s: %(message)s', datefmt='%b %d %H:%M:%S',
                                 handlers=handlers)
@@ -87,7 +88,7 @@ class CSClient(object):
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
 
         """
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = "get\n{}\n{}\n{}\n".format(base, query, tree)
             return self._dispatch(cmd).get('data')
         else:
@@ -126,7 +127,7 @@ class CSClient(object):
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
 
         """
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = "decrypt\n{}\n{}\n{}\n".format(base, query, tree)
             return self._dispatch(cmd).get('data')
         else:
@@ -155,7 +156,7 @@ class CSClient(object):
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
         """
         value = json.dumps(value)
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = "put\n{}\n{}\n{}\n{}\n".format(base, query, tree, value)
             return self._dispatch(cmd)
         else:
@@ -197,7 +198,7 @@ class CSClient(object):
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
         """
         value = json.dumps(value)
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = f"post\n{base}\n{query}\n{value}\n"
             return self._dispatch(cmd)
         else:
@@ -235,7 +236,7 @@ class CSClient(object):
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
         """
 
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             if value[0].get("config"):
                 adds = value[0]
             else:
@@ -281,7 +282,7 @@ class CSClient(object):
         Returns:
             A dictionary containing the response (i.e. {"success": True, "data:": {}}
         """
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = "delete\n{}\n{}\n".format(base, query)
             return self._dispatch(cmd)
         else:
@@ -316,7 +317,7 @@ class CSClient(object):
             Success: None
             Failure: An error
         """
-        if 'linux' in sys.platform:
+        if self.ON_DEVICE:
             cmd = "alert\n{}\n{}\n".format(self.app_name, value)
             return self._dispatch(cmd)
         else:
@@ -337,7 +338,7 @@ class CSClient(object):
         if self.ncos:
             # Running in NCOS so write to the logger
             self.logger.info(value)
-        elif 'linux' in sys.platform:
+        elif self.ON_DEVICE:
             # Running in Linux (container?) so write to stdout
             with open('/dev/stdout', 'w') as log:
                 log.write(f'{self.app_name}: {value}\n')
@@ -379,7 +380,7 @@ class CSClient(object):
         device_username = ''
         device_password = ''
 
-        if 'linux' not in sys.platform:
+        if not CSClient.ON_DEVICE:
             import os
             import configparser
 
@@ -484,3 +485,22 @@ class CSClient(object):
         if errmsg is not None:
             self.log(errmsg)
         return result
+
+    def get_appdata(self, key):
+        env_key = key.upper().replace('.', '_').replace('-', '_')
+        env_value = os.environ.get(env_key)
+        if env_value:
+            return env_value
+
+        appdata = self.get("/config/system/sdk/appdata")
+        return next((j['value'] for j in appdata if j['name'] == key), None)
+
+    def set_appdata(self, key, value):
+        appdata = self.get("/config/system/sdk/appdata")
+        for item in appdata:
+            if item['name'] == key:
+                item['value'] = value
+                self.put("/config/system/sdk/appdata", appdata)
+                return
+        appdata.append({'name': key, 'value': value})
+        self.put("/config/system/sdk/appdata", appdata)

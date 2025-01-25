@@ -18,13 +18,17 @@ services:
     network_mode: bridge
     image: ghcr.io/dapplegatecp/lpp-client
     restart: unless-stopped
+    environment:
+      - WEBAPP=true
+    ports:
+      - 8080:8080
     volumes:
       - $CONFIG_STORE
     devices:
       - /dev/ttyS1
 
 ```
-> Note: the application running in the container relies on the container auto-restarting, so be sure to set restart to "unless-stopped" as shown above.
+> Note: a webapp that can be used to check status, monitor logs, and configure the client can run on port 8080. Omit port 8080 and env WEBAPP if you do not want to run the webapp.
 
 > Also note: when using the tcp server feature (lpp-client.output=un-tcp:port), you need to expose the port on the container so external clients can connect, e.g. by adding `ports: ['5433:5433']` to the service definition.
 
@@ -86,5 +90,7 @@ The _initial_ starting values can also be overridden, these are the values sent 
 ## Usage
 
 The application is designed to run automatically on the Cradlepoint router. Configure the desired options using the Cradlepoint SDK's appdata, and the LPP client will start with the specified settings.
+
+A webserver is also included in the container. It runs on port 8080 and provides a simple interface for viewing the current status, configuration and logs. The environmental variable WEBAPP=true must be exposed for the webserver to run as well a port forwarded to port 8080 in the container. The webserver can be accessed by navigating to the router's IP address and port 8080 in a web browser.
 
 For more detailed information about the implementation, please refer to the `main.py` file.

@@ -5,9 +5,7 @@ import subprocess
 import shlex
 import os
 
-import logging
-logging.basicConfig(level=logging.DEBUG, format='%(message)s', handlers=[logging.StreamHandler()])
-logger = logging.getLogger("lpp-client")
+from logger_config import logger
 
 from csclient import CSClient
 cs = CSClient("lpp-client", logger=logger)
@@ -47,7 +45,7 @@ class RunProgram:
                     try:
                         line = self.process.stdout.readline()
                     except UnicodeDecodeError as e:
-                        logger.error(f"Error reading output: {e}")
+                        logger.error(f"bad output: {e}")
                         continue
                     if not line:
                         break
@@ -63,7 +61,7 @@ class RunProgram:
             # Return the return code of the program
             return return_code
         except Exception as e:
-            logger.error(f"Error: {e}")
+            logger.exception(f"{e}")
             return -1
         finally:
             self.process = None
@@ -104,7 +102,7 @@ def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
                     try:
                         chunk = chunk.decode()
                     except UnicodeDecodeError:
-                        logger.error(f"Error decoding chunk as utf-8 {chunk}")
+                        logger.error(f"failed decoding chunk as utf-8 {chunk}")
                         chunk = None
                     if not chunk:
                         break
@@ -132,24 +130,28 @@ def tcp_server_thread(port, tcp_clients):
 
 def cs_get(path):
     try:
-        return cs.get(path)
+        if cs.ON_DEVICE:
+            return cs.get(path)
+        else:
+            raise Exception("Not on device")
     except Exception as e:
-        logger.error(f"Error getting {path} from CS: {e}")
+        logger.error(f"failed getting {path} from CS: {e}")
 
 def cs_put(path, value):
     try:
-        return cs.put(path, value)
+        if cs.ON_DEVICE:
+            return cs.put(path, value)
+        else:
+            raise Exception("Not on device")
     except Exception as e:
-        logger.error(f"Error putting to {path} in CS: {e}")
+        logger.error(f"failed putting to {path} in CS: {e}")
 
 def get_appdata(key):
-    env_key = key.upper().replace('.', '_').replace('-', '_')
-    env_value = os.environ.get(env_key)
-    if env_value:
-        return env_value
-
-    appdata = cs_get("/config/system/sdk/appdata")
-    return next((j['value'] for j in appdata if j['name'] == key), None)
+    try:
+        if cs.ON_DEVICE:
+            return cs.get_appdata(key)
+    except Exception as e:
+        logger.error(f"failed getting appdata {key}: {e}")
 
 def get_cellular_info(device=None):
     if device is None:
@@ -226,7 +228,7 @@ def get_cmd_params():
         "flags": flags
     }
 
-if __name__ == "__main__":
+def main():
     logger.info("Starting lpp client")
 
     params = get_cmd_params()
@@ -318,3 +320,10 @@ if __name__ == "__main__":
     ct.join()
 
     logger.info("Exiting program, hopefully restarting...")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.exception(f"{e}")
+        raise e
