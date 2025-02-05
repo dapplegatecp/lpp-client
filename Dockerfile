@@ -47,8 +47,9 @@ stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0
 
 [eventlistener:quit_on_failure]
+directory=/lpp-client
 events=PROCESS_STATE_FATAL
-command=/bin/bash -c "python /app/event_handler.py \$PPID"
+command=/bin/bash -c "python ./event_handler.py \$PPID"
 environment=TRIGGER_PROCESS=main
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
