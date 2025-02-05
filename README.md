@@ -1,7 +1,7 @@
 
 # LPP Client
 
-This is a Python-based LPP (Location Protocol Platform) client application designed to work with Cradlepoint routers.
+This is a Python-based LPP (Location Protocol Platform) client application designed to work with Cradlepoint routers. It is a docker container that can run on various Cradlepoint endpoints that support the container environment (r1900, r980, etc). The container also builds an SDK version as well that can potentially work on a larger set of Cradlepoint endpoints (see Building and SDK section below for more info)
 
 ## Overview
 
@@ -28,7 +28,7 @@ services:
       - /dev/ttyS1
 
 ```
-> Note: a webapp that can be used to check status, monitor logs, and configure the client can run on port 8080. Omit port 8080 and env WEBAPP if you do not want to run the webapp.
+> Note: a webapp that can be used to check status, monitor logs, and configure the client can run on port 8080. Omit port 8080 and env WEBAPP if you do not want to run the webapp. The SDK version always runs the webapp regardless of the WEBAPP env variable. Navigate to it by going to the router's IP address and port 8080 in a web browser.
 
 > Also note: when using the tcp server feature (lpp-client.output=un-tcp:port), you need to expose the port on the container so external clients can connect, e.g. by adding `ports: ['5433:5433']` to the service definition.
 
@@ -94,3 +94,20 @@ The application is designed to run automatically on the Cradlepoint router. Conf
 A webserver is also included in the container. It runs on port 8080 and provides a simple interface for viewing the current status, configuration and logs. The environmental variable WEBAPP=true must be exposed for the webserver to run as well a port forwarded to port 8080 in the container. The webserver can be accessed by navigating to the router's IP address and port 8080 in a web browser.
 
 For more detailed information about the implementation, please refer to the `main.py` file.
+
+
+## Building and SDK
+To build this repository into a container image, run a command similar to below. Pay special attention to the architecture of the platform you are building for (linux/arm64). For more information on building for different platforms, see the [Docker documentation](https://docs.docker.com/desktop/multi-arch/).
+
+
+```bash
+docker build --platform=linux/arm64 -t lpp-client .
+```
+
+The lpp-client.tar.gz SDK version can be downloaded from the releases page. It can also be retrieved from the container image itself. Pay special care to run the correct platform (linux/arm64):
+
+```bash
+docker run --platform=linux/arm64 --rm ghcr.io/dapplegatecp/lpp-client:latest cat /lpp-client.tar.gz > lpp-client.tar.gz
+```
+
+For more information on running SDK apps on Cradlepoint endpoints see the [SDK documentation](https://docs.cradlepoint.com/r/NetCloud-Manager-Tools-Tab/SDK).

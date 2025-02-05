@@ -140,12 +140,12 @@
 <body>
     <h2>LPP Client Configuration</h2>
     <form action="/update" method="post">
-        % for key, value in config.items():
+        {% for key, value in config.items() %}
             <div class="form-field">
-                <label for="{{key}}">{{key.replace('_', ' ').title()}}:</label>
-                <input type="text" id="{{key}}" name="{{key}}" value="{{value}}">
+                <label for="{{ key }}">{{ key.replace('_', ' ').title() }}:</label>
+                <input type="text" id="{{ key }}" name="{{ key }}" value="{{ value }}">
             </div>
-        % end
+        {% end %}
         <input type="submit" value="Update Configuration">
     </form>
 

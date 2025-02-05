@@ -43,13 +43,13 @@ class RunProgram:
                     if not self.process:
                         break
                     try:
-                        line = self.process.stdout.readline()
+                        for line in iter(self.process.stdout.readline, ''):
+                            logger.info(line.rstrip())
+                            if not self.process:
+                                break
                     except UnicodeDecodeError as e:
                         logger.error(f"bad output: {e}")
                         continue
-                    if not line:
-                        break
-                    logger.info(line.strip())
 
             output_thread = threading.Thread(target=output_thread)
             output_thread.daemon = True
@@ -57,6 +57,14 @@ class RunProgram:
 
             # Wait for the program to complete and collect the return code
             return_code = self.process.wait()
+
+            # Ensure all remaining output is read
+            remaining_output = self.process.stdout.read()
+            if remaining_output:
+                for line in remaining_output.splitlines():
+                    logger.info(line.rstrip())
+
+            logger.info(f"Program exited with return code {return_code}")
 
             # Return the return code of the program
             return return_code
@@ -272,9 +280,9 @@ def main():
     additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
 
     msisdn_or_imsi = f"--msisdn {cellular['mdn']}" if cellular.get('mdn') else f"--imsi {cellular['imsi']}"
-
+    app_path = os.environ.get('APP_PATH') or "./example-lpp"
     cmd = (
-        f"/app/example-lpp {format} "
+        f"{app_path} {format} "
         f"--prm {additional_flags} "
         f"-h {params['host']} "
         f"--port {params['port']} "

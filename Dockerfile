@@ -4,15 +4,22 @@ FROM python:3-slim-bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y libssl-dev tini supervisor && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir bottle gevent
+RUN pip install --no-cache-dir tornado
 
-RUN mkdir /app
-RUN mkdir /log
-COPY --from=builder /app/docker_build/example-lpp /app/example-lpp
-COPY --from=builder /app/docker_build/example-ublox /app/example-ublox
-COPY --from=builder /app/docker_build/example-ntrip /app/example-ntrip
-COPY ./*.py /app/
-COPY ./views /app/views
+RUN mkdir /lpp-client
+COPY --from=builder /app/docker_build/example-lpp /lpp-client/example-lpp
+COPY --from=builder /app/docker_build/example-ublox /lpp-client/example-ublox
+COPY --from=builder /app/docker_build/example-ntrip /lpp-client/example-ntrip
+COPY ./*.py /lpp-client/
+COPY ./views /lpp-client/views
+RUN mkdir /lpp-client/log
+
+# sdk files and build the SDK
+COPY ./package_application.py /package_application.py
+COPY ./package.ini /lpp-client/package.ini
+COPY ./start.sh /lpp-client/start.sh
+
+RUN python3 /package_application.py lpp-client
 
 COPY <<EOF /etc/supervisord.conf
 [supervisord]
@@ -20,7 +27,8 @@ nodaemon=true
 user=root
 
 [program:main]
-command=python /app/main.py
+directory=/lpp-client
+command=python main.py
 autostart=true
 autorestart=true
 stdout_logfile=/dev/fd/1
@@ -29,7 +37,7 @@ stdout_logfile_maxbytes=0
 
 
 [program:webapp]
-directory=/app
+directory=/lpp-client
 command=python webapp.py
 autostart=true
 autorestart=true
