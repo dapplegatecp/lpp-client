@@ -165,19 +165,19 @@ def get_cellular_info(device=None):
     if device is None:
         device = get_appdata("lpp-client.device") or cs_get("/status/wan/primary_device")
     if not (device and device.startswith("mdm")):
-        raise Exception("primary_device is not a modem")
+        logger.warning(f"primary_device is not a modem: {device}")
     
-    diag = cs_get(f"/status/wan/devices/{device}/diagnostics")
-    plmn = diag['CUR_PLMN']
+    diag = cs_get(f"/status/wan/devices/{device}/diagnostics") or {}
+    plmn = diag.get('CUR_PLMN') or "000000"
     mcc = plmn[:3]
     mnc = plmn[3:]
-    tac = diag.get('TAC')
-    imsi = diag['IMSI']
-    cell_id = diag.get('CELL_ID').split(" ")[0]
-    mdn = diag.get('MDN')
+    tac = diag.get('TAC') or '0'
+    imsi = diag.get('IMSI') or '0'
+    cell_id = diag.get('CELL_ID','').split(" ")[0] or '0'
+    mdn = diag.get('MDN') or '0'
 
     if not cell_id:
-        cell_id =  diag['NR_CELL_ID']
+        cell_id =  diag.get('NR_CELL_ID') or '0'
         tac = plmn
 
     current_cellular = {"mcc": mcc, "mnc": mnc, "tac": tac, "cell_id": cell_id, "imsi": imsi}
