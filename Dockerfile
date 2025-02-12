@@ -34,7 +34,7 @@ autorestart=true
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0
-
+stderr_logfile_maxbytes=0
 
 [program:webapp]
 directory=/lpp-client
@@ -45,6 +45,7 @@ environment=WEBAPP=%(ENV_WEBAPP)s
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0
+stderr_logfile_maxbytes=0
 
 [eventlistener:quit_on_failure]
 directory=/lpp-client
@@ -54,6 +55,7 @@ environment=TRIGGER_PROCESS=main
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0
+stderr_logfile_maxbytes=0
 EOF
 
 ENV WEBAPP=false
