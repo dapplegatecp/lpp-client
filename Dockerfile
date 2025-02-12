@@ -1,6 +1,6 @@
 FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:v3.4.12 AS builder
 
-FROM python:3-slim-bullseye
+FROM python:3-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y libssl-dev tini supervisor && rm -rf /var/lib/apt/lists/*
