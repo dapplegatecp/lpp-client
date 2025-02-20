@@ -7,6 +7,8 @@ from tornado.ioloop import IOLoop
 from csclient import CSClient
 from logger_config import logger, LOG_PATH
 
+LPP_VERSION = os.environ.get('LPP_VERSION', 'v0.0.0')
+LPP_CLIENT_CONTAINER_VERSION = os.environ.get('LPP_CLIENT_CONTAINER_VERSION', 'v0.0.0')
 
 cs = CSClient("lpp-client", logger=logger)
 
@@ -61,7 +63,7 @@ class MainHandler(tornado.web.RequestHandler):
             'cell_id': get_appdata("lpp-client.cell_id") or "",
             'imsi': get_appdata("lpp-client.imsi") or ""
         }
-        return self.render('config_form.tpl', config=config)
+        return self.render('config_form.tpl', config=config, lpp_version=LPP_VERSION, lpp_client_container_version=LPP_CLIENT_CONTAINER_VERSION)
 
 class LogsHandler(tornado.web.RequestHandler):
     def set_default_headers(self):

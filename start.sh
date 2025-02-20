@@ -1,2 +1,4 @@
-WEBAPP="true" cppython webapp.py &
+#!/bin/bash
+. ./.env
+cppython webapp.py &
 cppython main.py

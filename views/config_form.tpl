@@ -153,6 +153,12 @@
     <div class="connection-status"></div>
     <div id="logs"></div>
 
+    <h2>Versions</h2>
+    <div>
+        <p>LPP_VERSION={{ lpp_version }}</p>
+        <p>LPP_CLIENT_CONTAINER_VERSION={{ lpp_client_container_version }}</p>
+    </div>
+
     <script>
         const logDiv = document.getElementById('logs');
         const statusDiv = document.querySelector('.connection-status');
