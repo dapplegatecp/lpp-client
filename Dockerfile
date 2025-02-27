@@ -1,4 +1,4 @@
-ARG LPP_VERSION=v3.4.13
+ARG LPP_VERSION=v3.4.15
 
 FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:${LPP_VERSION} AS builder
 
