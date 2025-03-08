@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        version: [${{ env.LPP_VERSION_3 }}, ${{ env.LPP_VERSION_4 }}]
+        version: ["${{ env.LPP_VERSION_3 }}", "${{ env.LPP_VERSION_4 }}"]
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: write
