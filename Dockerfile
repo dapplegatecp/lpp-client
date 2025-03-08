@@ -1,4 +1,4 @@
-ARG LPP_VERSION=v3.4.15
+ARG LPP_VERSION=v4.0.1
 
 FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:${LPP_VERSION} AS builder
 
@@ -12,9 +12,8 @@ RUN apt-get update && apt-get install -y libssl-dev tini supervisor && rm -rf /v
 RUN pip install --no-cache-dir tornado
 
 RUN mkdir /lpp-client
-COPY --from=builder /app/docker_build/example-lpp /lpp-client/example-lpp
-COPY --from=builder /app/docker_build/example-ublox /lpp-client/example-ublox
-COPY --from=builder /app/docker_build/example-ntrip /lpp-client/example-ntrip
+COPY --from=builder /app/docker_build/example-* /lpp-client/
+
 COPY ./*.py /lpp-client/
 COPY ./views /lpp-client/views
 RUN mkdir /lpp-client/log
@@ -47,6 +46,7 @@ directory=/lpp-client
 command=python main.py
 autostart=true
 autorestart=true
+environment=WEBAPP=%(ENV_WEBAPP)s,LPP_VERSION=%(ENV_LPP_VERSION)s,LPP_CLIENT_CONTAINER_VERSION=%(ENV_LPP_CLIENT_CONTAINER_VERSION)s
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0
@@ -57,7 +57,7 @@ directory=/lpp-client
 command=python webapp.py
 autostart=true
 autorestart=true
-environment=WEBAPP=%(ENV_WEBAPP)s
+environment=WEBAPP=%(ENV_WEBAPP)s,LPP_VERSION=%(ENV_LPP_VERSION)s,LPP_CLIENT_CONTAINER_VERSION=%(ENV_LPP_CLIENT_CONTAINER_VERSION)s
 stdout_logfile=/dev/fd/1
 stderr_logfile=/dev/fd/2
 stdout_logfile_maxbytes=0

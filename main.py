@@ -175,12 +175,15 @@ def get_cellular_info(device=None):
     imsi = diag.get('IMSI') or '0'
     cell_id = diag.get('CELL_ID','').split(" ")[0] or '0'
     mdn = diag.get('MDN') or '0'
+    nr = False
 
     if not cell_id:
         cell_id =  diag.get('NR_CELL_ID') or '0'
+        if cell_id != '0':
+            nr = True
         tac = plmn
 
-    current_cellular = {"mcc": mcc, "mnc": mnc, "tac": tac, "cell_id": cell_id, "imsi": imsi}
+    current_cellular = {"mcc": mcc, "mnc": mnc, "tac": tac, "cell_id": cell_id, "imsi": imsi, "nr": nr}
 
     # cellular overrides
     current_cellular["mcc"] = get_appdata("lpp-client.mcc") or current_cellular["mcc"]
@@ -188,6 +191,7 @@ def get_cellular_info(device=None):
     current_cellular["tac"] = get_appdata("lpp-client.tac") or current_cellular["tac"]
     current_cellular["cell_id"] = get_appdata("lpp-client.cell_id") or current_cellular["cell_id"]
     current_cellular["imsi"] = get_appdata("lpp-client.imsi") or current_cellular["imsi"]
+    current_cellular["nr"] = get_appdata("lpp-client.nr") or current_cellular["nr"]
 
     # mdn can only be used if explicitly requested
     for use_mdn in (get_appdata("lpp-client.mdn"), get_appdata("lpp-client.msisdn")):
@@ -236,33 +240,9 @@ def get_cmd_params():
         "flags": flags
     }
 
-def main():
-    logger.info("Starting lpp client")
-
-    params = get_cmd_params()
-    cellular = get_cellular_info()
-    logger.info(params)
-
-    if params["cs_path"] == "/status/rtk/nmea": # the default
-        if cs_get("/status/rtk") is None:
-            cs_put("/status/rtk", {"nmea": []})
-    
-    tcp_clients=[]
-
-    if params["output"].startswith("un"):
-        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients))
-        un_thread.daemon = True
-        un_thread.start()
-        output_param = "--nmea-export-un=/tmp/nmea.sock"
-        if params["output"].startswith("un-tcp"):
-            _, port = params["output"].split(":")
-            tcp_thread = threading.Thread(target=tcp_server_thread, args=(int(port), tcp_clients))
-            tcp_thread.daemon = True
-            tcp_thread.start()
-    else:
-        ip, port = params['output'].split(':')
-        output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
-
+def build_v3_command(params, cellular):
+    """Build command for v3 example-lpp client"""
+    app_path = "./example-lpp"
     format = "osr"
     additional_flags = []
     if params["format"] == "osr":
@@ -280,7 +260,13 @@ def main():
     additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
 
     msisdn_or_imsi = f"--msisdn {cellular['mdn']}" if cellular.get('mdn') else f"--imsi {cellular['imsi']}"
-    app_path = os.environ.get('APP_PATH') or "./example-lpp"
+    
+    if params["output"].startswith("un"):
+        output_param = "--nmea-export-un=/tmp/nmea.sock"
+    else:
+        ip, port = params['output'].split(':')
+        output_param = f"--nmea-export-tcp={ip} --nmea-export-tcp-port={port}"
+    
     cmd = (
         f"{app_path} {format} "
         f"--prm {additional_flags} "
@@ -295,6 +281,99 @@ def main():
         f"--nmea-serial-baud {params['baud']} "
         f"--ctrl-stdin {output_param}"
     )
+    
+    return cmd
+
+def build_v4_command(params, cellular):
+    """Build command for v4 example-client"""
+    app_path = "./example-client"
+    # Determine processors based on format
+    processors = []
+    if params["format"] == "osr":
+        processors.append("--lpp2rtcm")
+    else:  # ssr
+        processors.append("--lpp2spartn")
+    
+    # Handle additional flags
+    additional_flags = params["flags"].replace(',', ' ').split()
+    additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
+    
+    # Identity specification
+    identity_param = ""
+    if cellular.get('mdn'):
+        identity_param = f"--msisdn {cellular['mdn']}"
+    else:
+        identity_param = f"--imsi {cellular['imsi']}"
+    
+    # Input/Output configuration
+    input_param = f"--input serial:device={params['serial']},baudrate={params['baud']},format=nmea"
+    
+    # Output configuration
+    if params["output"].startswith("un"):
+        # Use UDP with PATH for Unix socket
+        output_param = "--output udp-client:path=/tmp/nmea.sock,format=rtcm"
+    else:
+        ip, port = params['output'].split(':')
+        output_param = f"--output tcp-client:{ip}:{port},format=rtcm"
+    
+    # Assistance data type
+    ad_type = "--ad-type=osr" if params["format"] == "osr" else "--ad-type=ssr"
+    
+    cmd = (
+        f"{app_path} "
+        f"{' '.join(processors)} "
+        f"{additional_flags} "
+        f"--ls-host {params['host']} "
+        f"--ls-port {params['port']} "
+        f"--mcc {params['starting_mcc'] or cellular['mcc']} "
+        f"--mnc {params['starting_mnc'] or cellular['mnc']} "
+        f"--tac {params['starting_tac'] or cellular['tac']} "
+        f"--ci {params['starting_cell_id'] or cellular['cell_id']} "
+        f"{'--nr-cell ' if cellular['nr'] else ''}"
+        f"{identity_param} "
+        f"{input_param} "
+        f"{output_param} "
+        f"{ad_type}"
+    )
+    
+    return cmd
+
+def main():
+    logger.info("Starting lpp client")
+
+    params = get_cmd_params()
+    cellular = get_cellular_info()
+    logger.info(params)
+
+    if params["cs_path"] == "/status/rtk/nmea": # the default
+        if cs_get("/status/rtk") is None:
+            cs_put("/status/rtk", {"nmea": []})
+    
+    tcp_clients=[]
+
+    if params["output"].startswith("un"):
+        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients))
+        un_thread.daemon = True
+        un_thread.start()
+        if params["output"].startswith("un-tcp"):
+            _, port = params["output"].split(":")
+            tcp_thread = threading.Thread(target=tcp_server_thread, args=(int(port), tcp_clients))
+            tcp_thread.daemon = True
+            tcp_thread.start()
+
+    # Determine which client to use
+    lpp_client_version = os.environ.get('LPP_VERSION', 'v3.0.0')
+    major_version = int(lpp_client_version.lstrip('v').split('.')[0])
+    use_v4_client = major_version >= 4
+    logger.info(f"-->{major_version} {major_version} {lpp_client_version}")
+    
+    if use_v4_client:
+        logger.info("Using v4 client (example-client)")
+        cmd = build_v4_command(params, cellular)
+    else:
+        logger.info("Using v3 client (example-lpp)")
+        cmd = build_v3_command(params, cellular)
+    
     logger.info(cmd)
     program = RunProgram(cmd)
 
