@@ -1,4 +1,3 @@
-
 # LPP Client
 
 This is a Python-based LPP (Location Protocol Platform) client application designed to work with Cradlepoint routers. It is a docker container that can run on various Cradlepoint endpoints that support the container environment (r1900, r980, etc). The container also builds an SDK version as well that can potentially work on a larger set of Cradlepoint endpoints (see Building and SDK section below for more info)
@@ -42,6 +41,8 @@ The application uses the following configuration parameters, which can be set us
 - `lpp-client.format`: The data format (default: "osr")
 - `lpp-client.forwarding`: Forwarding configuration (optional)
 - `lpp-client.flags`: Additional flags for the LPP client (optional)
+- `lpp-client.tokoro_flags`: Additional flags specific to Tokoro format (optional)
+- `lpp-client.spartn_flags`: Additional flags specific to SPARTN format (optional)
 - `lpp-client.path`: The CS (Configuration System) path for storing NMEA data (default: "/status/rtk/nmea")
 - `lpp-client.starting_mmc`: The starting mmc (optional)
 - `lpp-client.starting_mnc`: The starting mnc (optional)
@@ -52,6 +53,10 @@ The application uses the following configuration parameters, which can be set us
 - `lpp-client.tac`: Tracking Area Code (optional)
 - `lpp-client.cell_id`: Cell ID (optional)
 - `lpp-client.imsi`: International Mobile Subscriber Identity (optional)
+- `lpp-client.mdn`: Mobile Directory Number, used instead of IMSI if specified (optional)
+- `lpp-client.msisdn`: Alternative way to specify MDN, used instead of IMSI if specified (optional)
+- `lpp-client.nr`: Typically automatic but can explicitly be set to true if using NR (New Radio/5G) cell (optional)
+- `lpp-client.device`: Specify the modem device to use (optional, default is the primary WAN device)
 
 Alternatively, you can specify these configuration parameters using environment variables with the LPP_CLIENT_ prefix, e.g. LPP_CLIENT_HOST.
 
@@ -77,8 +82,13 @@ The _initial_ starting values can also be overridden, these are the values sent 
 
 ## Data Formats
 
-- OSR (Observation State Record): Default format
-- SSR (State Space Representation): Alternative format
+- osr (Observation State Record): Default format
+- ssr (State Space Representation): Alternative format
+- lpp2rtcm: Convert LPP to RTCM format (same as OSR)
+- lpp2spartn: Convert LPP to SPARTN format
+- tokoro: Use Tokoro format for SSR data
+- osr-lfr: OSR with Location Frame Reference format
+- ssr-lfr: SSR with Location Frame Reference format
 
 ## Additional Features
 
