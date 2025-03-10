@@ -222,7 +222,10 @@ def get_cmd_params():
     #flags are comma separated. For example:
     # "confidence-95to39,ura-override=2,ublox-clock-correction,force-continuity,sf055-default=3,sf042-default=1,increasing-siou"
     cs_path = get_appdata("lpp-client.path")
-    cs_path = "/status/rtk/nmea" if  cs_path is None else cs_path 
+    cs_path = "/status/rtk/nmea" if  cs_path is None else cs_path
+
+    tokoro_flags = get_appdata("lpp-client.tokoro_flags") or ""
+    spartn_flags = get_appdata("lpp-client.spartn_flags") or ""
 
     return {
         "host": host,
@@ -237,7 +240,9 @@ def get_cmd_params():
         "starting_tac": starting_tac,
         "starting_cell_id": starting_cell_id,
         "forwarding": forwarding,
-        "flags": flags
+        "flags": flags,
+        "tokoro_flags": tokoro_flags,
+        "spartn_flags": spartn_flags
     }
 
 def build_v3_command(params, cellular):
@@ -287,16 +292,47 @@ def build_v3_command(params, cellular):
 def build_v4_command(params, cellular):
     """Build command for v4 example-client"""
     app_path = "./example-client"
-    # Determine processors based on format
-    processors = []
-    if params["format"] == "osr":
-        processors.append("--lpp2rtcm")
-    else:  # ssr
-        processors.append("--lpp2spartn")
-    
+
     # Handle additional flags
     additional_flags = params["flags"].replace(',', ' ').split()
     additional_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in additional_flags)
+
+    tokoro_flags = params["tokoro_flags"].replace(', ', ' ').split()
+    tokoro_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in tokoro_flags)
+
+    spartn_flags = params["spartn_flags"].replace(', ', ' ').split()
+    spartn_flags = ' '.join(f"--{flag.lstrip('-')}" for flag in spartn_flags)
+
+    # Determine processors based on format
+    processors = []
+    ad_type = "--ad-type=osr"
+    output_format = "rtcm"
+    if params["format"] == "osr" or params["format"] == "lpp2rtcm":
+        ad_type = "--ad-type=osr"
+        output_format = "rtcm"
+        processors.append("--lpp2rtcm")
+    elif params["format"] == "lpp2spartn":
+        ad_type = "--ad-type=ssr"
+        output_format = "spartn"
+        processors.append("--lpp2spartn")
+        additional_flags += " " + spartn_flags
+    elif params["format"] == "tokoro":
+        ad_type = "--ad-type=ssr"
+        processors.append("--tokoro")
+        additional_flags += " " + tokoro_flags
+    elif params["format"] == "osr-lfr":
+        ad_type = "--ad-type=osr"
+        output_format = "lrf"
+        processors.append("--lpp2fr")
+    elif params["format"] == "ssr-lfr":
+        ad_type = "--ad-type=ssr"
+        output_format = "lrf"
+        processors.append("--lpp2fr")
+    else:
+        logger.error(f"unknown format: {params['format']}")
+        ad_type = "--ad-type=osr"
+        output_format = "rtcm"
+        processors.append("--lpp2rtcm")
     
     # Identity specification
     identity_param = ""
@@ -306,18 +342,16 @@ def build_v4_command(params, cellular):
         identity_param = f"--imsi {cellular['imsi']}"
     
     # Input/Output configuration
-    input_param = f"--input serial:device={params['serial']},baudrate={params['baud']},format=nmea"
+    input_param = f"--input serial:device={params['serial']},baudrate={params['baud']},format=nmea+ubx"
+    output_param = f"--output serial:device={params['serial']},baudrate={params['baud']},format={output_format}"
     
     # Output configuration
     if params["output"].startswith("un"):
         # Use UDP with PATH for Unix socket
-        output_param = "--output udp-client:path=/tmp/nmea.sock,format=rtcm"
+        export_param = "--output udp-client:path=/tmp/nmea.sock,format=nmea"
     else:
         ip, port = params['output'].split(':')
-        output_param = f"--output tcp-client:{ip}:{port},format=rtcm"
-    
-    # Assistance data type
-    ad_type = "--ad-type=osr" if params["format"] == "osr" else "--ad-type=ssr"
+        export_param = f"--output tcp-client:host={ip},port={port},format=nmea"
     
     cmd = (
         f"{app_path} "
@@ -333,6 +367,7 @@ def build_v4_command(params, cellular):
         f"{identity_param} "
         f"{input_param} "
         f"{output_param} "
+        f"{export_param} "
         f"{ad_type}"
     )
     
@@ -395,7 +430,10 @@ def main():
             if new_cellular != current_cellular:
                 current_cellular = new_cellular
                 logger.info("cellular info changed", current_cellular)
-                cmd = f"/CID,L,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
+                if current_cellular["nr"]:
+                    cmd = f"/CID,N,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
+                else:
+                    cmd = f"/CID,L,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
                 program.write(cmd)
 
     ct = threading.Thread(target=control_thread, args=(program,params,cellular))
