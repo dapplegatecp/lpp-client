@@ -1,6 +1,6 @@
 ARG LPP_VERSION=v4.0.1
 
-FROM ghcr.io/dapplegatecp/supl-3gpp-lpp-client:${LPP_VERSION} AS builder
+FROM ghcr.io/ericsson/supl-3gpp-lpp-client:${LPP_VERSION} AS builder
 
 FROM python:3-slim-bookworm
 
