@@ -86,9 +86,9 @@ The _initial_ starting values can also be overridden, these are the values sent 
 - ssr (State Space Representation): Alternative format
 - lpp2rtcm: Convert LPP to RTCM format (same as OSR)
 - lpp2spartn: Convert LPP to SPARTN format
-- tokoro: Use Tokoro format for SSR data
-- osr-lfr: OSR with Location Frame Reference format
-- ssr-lfr: SSR with Location Frame Reference format
+- tokoro: Use Tokoro to convert SSR to OSR 
+- osr-lfr: OSR with LPP framed by RTCM
+- ssr-lfr: SSR with LPP framed by RTCM
 
 ## Additional Features
 

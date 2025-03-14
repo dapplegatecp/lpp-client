@@ -347,12 +347,19 @@ def build_v4_command(params, cellular):
     
     # Output configuration
     if params["output"].startswith("un"):
-        # Use UDP with PATH for Unix socket
-        export_param = "--output udp-client:path=/tmp/nmea.sock,format=nmea"
+        export_param = "--output tcp-client:path=/tmp/nmea.sock,format=nmea"
+    elif params["output"].startswith("tcp-server:"):
+        _, ip, port = params["output"]
+        export_param = f"--output tcp-server:host={ip},port={port},format=nmea"
+    elif params["output"].startswith("tcp-client:"):
+        _, ip, port = params["output"]
+        export_param = f"--output tcp-client:host={ip},port={port},format=nmea"
     else:
         ip, port = params['output'].split(':')
         export_param = f"--output tcp-client:host={ip},port={port},format=nmea"
     
+    control_param = "--input stdin:format=ctrl"
+
     cmd = (
         f"{app_path} "
         f"{' '.join(processors)} "
@@ -368,7 +375,8 @@ def build_v4_command(params, cellular):
         f"{input_param} "
         f"{output_param} "
         f"{export_param} "
-        f"{ad_type}"
+        f"{control_param} "
+        f"{ad_type} "
     )
     
     return cmd
