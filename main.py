@@ -92,7 +92,7 @@ def handle_nmea_tcp(nmea, tcp_clients):
         except:
             tcp_clients.remove(client)
 
-def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
+def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[], log_messages=True):
     """ Thread for reading from unix socket and logging the output"""
     socket_path = "/tmp/nmea.sock"
     data = {}
@@ -121,7 +121,8 @@ def un_thread_server(cs_path="/status/rtk/nmea", tcp_clients=[]):
                             # check to see if the line starts with $ if not, add it
                             if line[0] !='$':
                                 line = f'${line}'
-                            logger.info(line)
+                            if log_messages:
+                                logger.info(line)
                             if cs_path:
                                 data = handle_nmea(line, data=data, cs_path=cs_path)
                             handle_nmea_tcp(line, tcp_clients)
@@ -227,6 +228,14 @@ def get_cmd_params():
     tokoro_flags = get_appdata("lpp-client.tokoro_flags") or ""
     spartn_flags = get_appdata("lpp-client.spartn_flags") or ""
 
+    log_nmea = True
+    log_nmea_value = get_appdata("lpp-client.log_nmea")
+    if log_nmea_value is not None:
+        if log_nmea_value.lower() in ["", "true", "yes", "y"]:
+            log_nmea = True
+        elif log_nmea_value.lower() in ["false", "no", "n"]:
+            log_nmea = False
+
     return {
         "host": host,
         "port": port,
@@ -242,7 +251,8 @@ def get_cmd_params():
         "forwarding": forwarding,
         "flags": flags,
         "tokoro_flags": tokoro_flags,
-        "spartn_flags": spartn_flags
+        "spartn_flags": spartn_flags,
+        "log_nmea": log_nmea,
     }
 
 def build_v3_command(params, cellular):
@@ -395,7 +405,7 @@ def main():
     tcp_clients=[]
 
     if params["output"].startswith("un"):
-        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients))
+        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients, params["log-nmea"]))
         un_thread.daemon = True
         un_thread.start()
         if params["output"].startswith("un-tcp"):
