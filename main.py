@@ -405,7 +405,7 @@ def main():
     tcp_clients=[]
 
     if params["output"].startswith("un"):
-        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients, params["log-nmea"]))
+        un_thread = threading.Thread(target=un_thread_server, args=(params["cs_path"], tcp_clients, params["log_nmea"]))
         un_thread.daemon = True
         un_thread.start()
         if params["output"].startswith("un-tcp"):
