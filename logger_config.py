@@ -9,7 +9,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 
 # File handler
 LOG_PATH = './log/main.txt'
-file_handler = logging.FileHandler(LOG_PATH)
+file_handler = logging.RotatingFileHandler(LOG_PATH, maxBytes=1024 * 1024 * 8, backupCount=1)
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
