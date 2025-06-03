@@ -445,6 +445,7 @@ def main():
                 program.interrupt() # Terminate the external program
                 break
             new_cellular = get_cellular_info()
+            logger.info("cell check", current_cellular, new_cellular)
             if new_cellular != current_cellular:
                 current_cellular = new_cellular
                 logger.info("cellular info changed", current_cellular)
