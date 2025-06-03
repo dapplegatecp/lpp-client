@@ -445,10 +445,10 @@ def main():
                 program.interrupt() # Terminate the external program
                 break
             new_cellular = get_cellular_info()
-            logger.info("cell check", current_cellular, new_cellular)
+            logger.info(f"cell check: {new_cellular['mnc']},{new_cellular['mcc']},{new_cellular['tac']},{new_cellular['cell_id']},{new_cellular["nr"]} == {current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']},{current_cellular["nr"]}")
             if new_cellular != current_cellular:
                 current_cellular = new_cellular
-                logger.info("cellular info changed", current_cellular)
+                logger.info("cellular info changed")
                 if current_cellular["nr"]:
                     cmd = f"/CID,N,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
                 else:
