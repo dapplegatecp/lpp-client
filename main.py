@@ -450,9 +450,9 @@ def main():
                 current_cellular = new_cellular
                 logger.info("cellular info changed")
                 if current_cellular["nr"]:
-                    cmd = f"/CID,N,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
+                    cmd = f"/CID,N,{current_cellular['mcc']},{current_cellular['mnc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
                 else:
-                    cmd = f"/CID,L,{current_cellular['mnc']},{current_cellular['mcc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
+                    cmd = f"/CID,L,{current_cellular['mcc']},{current_cellular['mnc']},{current_cellular['tac']},{current_cellular['cell_id']}\r\n"
                 program.write(cmd)
 
     ct = threading.Thread(target=control_thread, args=(program,params,cellular))
